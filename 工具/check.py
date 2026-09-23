@@ -4,6 +4,9 @@
 有 ❌ 回傳 1，只有 ⚠️ 或全部正常回傳 0
 """
 import re, sys
+from pathlib import Path as _P
+sys.path.insert(0, str(_P(__file__).parent))
+from split import split_text
 from pathlib import Path
 
 ROOT = Path(".")
@@ -122,9 +125,9 @@ def check(files):
         bad.append(f"有不支援的檔案：{', '.join(o.name for o in others)}（只收 jpg/png，iPhone 的 HEIC 要先轉檔）")
     if not text and not imgs:
         bad.append("是空的")
-    if n > 500:
-        import math
-        warn.append(f"文案 {n} 字，會自動切成 {math.ceil(n / 170)} 篇左右串成長文（第一篇帶圖）")
+    parts = split_text(text) if text else []
+    if len(parts) > 1:
+        warn.append(f"會切成 {len(parts)} 篇串成長文，第一篇 {len(parts[0])} 字（媒體放第一篇）")
     if len(imgs) > 20:
         bad.append(f"{len(imgs)} 張圖，超過上限 20 張")
     for img in imgs:

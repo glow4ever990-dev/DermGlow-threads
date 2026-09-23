@@ -14,6 +14,7 @@ import json, os, re, shutil, sys, time
 from pathlib import Path
 from urllib.parse import quote
 import requests
+from split import split_text
 
 API = "https://graph.threads.net/v1.0"
 REPO = os.environ.get("GITHUB_REPOSITORY", "")
@@ -23,8 +24,6 @@ LOG = POSTED / "發布記錄.csv"
 LAST = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "last_post.json"
 IMG_OK = {".jpg", ".jpeg", ".png"}
 VID_OK = {".mp4", ".mov"}
-LIMIT = 500      # Threads 單篇上限
-CHUNK = 180      # 長文切段的目標長度：一屏一段
 NAME = re.compile(r"^(\d+)(?:-(\d+))?$")      # 011 / 011-2
 
 
@@ -106,33 +105,6 @@ def create(text, media):
         return new(text=text, **media_args(media[0]))
     kids = [new(is_carousel_item="true", **media_args(f)) for f in media]
     return new(media_type="CAROUSEL", children=",".join(kids), text=text)
-
-
-def split_text(text, limit=CHUNK):
-    """超過 500 字就切成一串，每段約 180 字，小標題不會落單"""
-    if len(text) <= LIMIT:
-        return [text]
-    paras = []
-    for para in [x.strip() for x in text.split("\n\n") if x.strip()]:
-        while len(para) > LIMIT:
-            cut = max((para.rfind(m, 0, LIMIT) for m in "。！？!?"), default=-1)
-            cut = cut + 1 if cut > LIMIT // 3 else LIMIT
-            paras.append(para[:cut].strip())
-            para = para[cut:].lstrip()
-        paras.append(para)
-    chunks, cur = [], []
-    for para in paras:
-        if cur and len("\n\n".join(cur + [para])) > limit:
-            chunks.append(cur)
-            cur = [para]
-        else:
-            cur.append(para)
-    if cur:
-        chunks.append(cur)
-    for i in range(len(chunks) - 1):
-        while len(chunks[i]) > 1 and len(chunks[i][-1]) < 25:
-            chunks[i + 1].insert(0, chunks[i].pop())
-    return ["\n\n".join(c) for c in chunks if c]
 
 
 def publish():
