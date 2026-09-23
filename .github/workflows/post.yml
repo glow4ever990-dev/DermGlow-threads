@@ -1,0 +1,39 @@
+name: Daily Threads Post
+on:
+  schedule:
+    # 每天 5 次，每次发 1 条（时间是 UTC，= 北京时间 9/12/15/18/21 点）
+    - cron: "0 1,4,7,10,13 * * *"
+  workflow_dispatch:       # 允许手动触发测试
+permissions:
+  contents: write
+concurrency:               # 两次运行不会同时进行，避免重复发同一条
+  group: threads-post
+  cancel-in-progress: false
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: 发布
+        run: python post.py
+        env:
+          THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
+      - name: 记录已发并提交（拉最新队列再改，失败自动重试）
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          for i in 1 2 3 4 5; do
+            git fetch origin "$GITHUB_REF_NAME"
+            git reset --hard "origin/$GITHUB_REF_NAME"
+            python post.py record
+            git add -A posts posted
+            git diff --cached --quiet && exit 0
+            git commit -m "posted $(date -u '+%F %H:%M')"
+            git push && exit 0
+            sleep 5
+          done
+          echo "已发布但记录没提交成功，请检查"; exit 1
