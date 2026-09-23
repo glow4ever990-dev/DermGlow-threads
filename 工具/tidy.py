@@ -22,10 +22,15 @@ def to_traditional():
         print("⚠️  簡繁轉換工具沒裝，跳過這一步")
         print("   要裝的話執行：python3 -m pip install --user opencc-python-reimplemented")
         return
-    cc = OpenCC("s2twp")   # 簡體 -> 繁體（台灣正體，含用詞轉換）
+    cc = OpenCC("s2tw")    # 只換字形，不換詞彙，避免把專業詞改成別的意思
+    # 少數台灣慣用詞單獨換，全部是安全、不會改變意思的
+    WORDS = {"軟件": "軟體", "視頻": "影片", "信息": "資訊", "默認": "預設",
+             "屏幕": "螢幕", "網絡": "網路", "質量": "品質", "數據": "數據"}
     for txt in sorted(ROOT.glob("*.txt")):
         old = txt.read_text("utf-8")
         new = cc.convert(old)
+        for a, b in WORDS.items():
+            new = new.replace(a, b)
         if new != old:
             txt.write_text(new, "utf-8")
             diff = sum(1 for a, b in zip(old, new) if a != b)
