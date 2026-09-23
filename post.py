@@ -22,7 +22,8 @@ POSTS, POSTED = Path("posts"), Path("posted")
 LOG = POSTED / "发布记录.csv"
 LAST = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "last_post.json"
 IMG_OK = {".jpg", ".jpeg", ".png"}  # Threads 只收这几种
-LIMIT = 500                          # Threads 单篇上限；超过就自动切成一串
+LIMIT = 500                          # Threads 单篇上限
+CHUNK = 180                          # 长文切段的目标长度：一段一屏，读起来不累
 
 
 def me_id():
@@ -82,28 +83,36 @@ def read_item(d):
     return text, imgs, None
 
 
-def split_text(text, limit=LIMIT):
-    """超過 500 字就切成幾段，優先在空行切，其次在句號切"""
-    if len(text) <= limit:
+def split_text(text, limit=CHUNK):
+    """超過 500 字就切成一串：以空行分段，每段大約 180 字，一屏一段讀起來不累"""
+    if len(text) <= LIMIT:
         return [text]
-    parts, cur = [], ""
-    for para in text.split("\n\n"):
-        while len(para) > limit:            # 單段就超長，按句子再切
-            cut = max((para.rfind(m, 0, limit) for m in "。！？!?\n"), default=-1)
-            cut = cut + 1 if cut > limit // 3 else limit
-            if cur:
-                parts.append(cur.strip()); cur = ""
-            parts.append(para[:cut].strip())
+
+    paras = []
+    for para in [x.strip() for x in text.split("\n\n") if x.strip()]:
+        while len(para) > LIMIT:                    # 單段就超長，按句子再切
+            cut = max((para.rfind(m, 0, LIMIT) for m in "。！？!?"), default=-1)
+            cut = cut + 1 if cut > LIMIT // 3 else LIMIT
+            paras.append(para[:cut].strip())
             para = para[cut:].lstrip()
-        if not para:
-            continue
-        if len(cur) + len(para) + 2 <= limit:
-            cur = f"{cur}\n\n{para}" if cur else para
+        paras.append(para)
+
+    chunks, cur = [], []
+    for para in paras:
+        if cur and len("\n\n".join(cur + [para])) > limit:
+            chunks.append(cur)
+            cur = [para]
         else:
-            parts.append(cur.strip()); cur = para
-    if cur.strip():
-        parts.append(cur.strip())
-    return [p for p in parts if p]
+            cur.append(para)
+    if cur:
+        chunks.append(cur)
+
+    # 小標題（很短的一行）不要落在某篇的結尾，推到下一篇開頭跟內文在一起
+    for i in range(len(chunks) - 1):
+        while len(chunks[i]) > 1 and len(chunks[i][-1]) < 25:
+            chunks[i + 1].insert(0, chunks[i].pop())
+
+    return ["\n\n".join(c) for c in chunks if c]
 
 
 def create(text, imgs):

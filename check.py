@@ -117,7 +117,7 @@ def check(d):
         bad.append("是空的")
     if n > 500:
         import math
-        warn.append(f"文案 {n} 字，會自動切成 {math.ceil(n / 480)} 篇串成長文（第一篇帶圖）")
+        warn.append(f"文案 {n} 字，會自動切成 {math.ceil(n / 170)} 篇左右串成長文（第一篇帶圖）")
     if len(imgs) > 20:
         bad.append(f"{len(imgs)} 張圖，超過上限 20 張")
     for img in imgs:

@@ -41,7 +41,7 @@ echo "正在跟雲端同步……"
 if git pull -q --rebase && git push -q; then
   echo ""
   echo "✅ 完成！$COUNT 篇已在雲端排隊"
-  echo "   發布時間：每天 9:00 / 12:00 / 15:00 / 18:00 / 21:00（布里斯本）"
+  echo "   發布時間：每天 10 次，布里斯本 8/10/12/13/15/16/18/19/20/21 點"
 else
   echo ""
   echo "❌ 同步失敗。把上面的紅字截圖問 Claude。"
