@@ -116,9 +116,8 @@ def check(d):
     if not text and not imgs:
         bad.append("是空的")
     if n > 500:
-        bad.append(f"文案 {n} 字，超過上限 500 字，要刪掉 {n - 500} 字")
-    elif n > 460:
-        warn.append(f"文案 {n} 字，快到 500 上限了")
+        import math
+        warn.append(f"文案 {n} 字，會自動切成 {math.ceil(n / 480)} 篇串成長文（第一篇帶圖）")
     if len(imgs) > 20:
         bad.append(f"{len(imgs)} 張圖，超過上限 20 張")
     for img in imgs:

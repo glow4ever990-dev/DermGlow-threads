@@ -22,6 +22,7 @@ POSTS, POSTED = Path("posts"), Path("posted")
 LOG = POSTED / "发布记录.csv"
 LAST = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "last_post.json"
 IMG_OK = {".jpg", ".jpeg", ".png"}  # Threads 只收这几种
+LIMIT = 500                          # Threads 单篇上限；超过就自动切成一串
 
 
 def me_id():
@@ -66,8 +67,6 @@ def read_item(d):
         text = d.read_text("utf-8").strip()
         if not text:
             return text, [], "文件是空的"
-        if len(text) > 500:
-            return text, [], f"文案 {len(text)} 字，超过 Threads 上限 500 字"
         return text, [], None
     files = sorted(f for f in d.iterdir() if f.is_file() and not f.name.startswith("."))
     txts = [f for f in files if f.suffix.lower() == ".txt"]
@@ -78,11 +77,33 @@ def read_item(d):
         return text, imgs, f"有不支持的文件（只收 jpg/png）：{', '.join(bad)}"
     if not text and not imgs:
         return text, imgs, "文件夹是空的"
-    if len(text) > 500:
-        return text, imgs, f"文案 {len(text)} 字，超过 Threads 上限 500 字"
     if len(imgs) > 20:
         return text, imgs, f"{len(imgs)} 张图，超过上限 20 张"
     return text, imgs, None
+
+
+def split_text(text, limit=LIMIT):
+    """超過 500 字就切成幾段，優先在空行切，其次在句號切"""
+    if len(text) <= limit:
+        return [text]
+    parts, cur = [], ""
+    for para in text.split("\n\n"):
+        while len(para) > limit:            # 單段就超長，按句子再切
+            cut = max((para.rfind(m, 0, limit) for m in "。！？!?\n"), default=-1)
+            cut = cut + 1 if cut > limit // 3 else limit
+            if cur:
+                parts.append(cur.strip()); cur = ""
+            parts.append(para[:cut].strip())
+            para = para[cut:].lstrip()
+        if not para:
+            continue
+        if len(cur) + len(para) + 2 <= limit:
+            cur = f"{cur}\n\n{para}" if cur else para
+        else:
+            parts.append(cur.strip()); cur = para
+    if cur.strip():
+        parts.append(cur.strip())
+    return [p for p in parts if p]
 
 
 def create(text, imgs):
@@ -107,10 +128,15 @@ def publish():
             # GitHub 页面上会显示黄色警告，这个文件夹留着等你改
             print(f"::warning::跳过 {d.name}：{problem}")
             continue
+        parts = split_text(text)
         pid = call("POST", f"{me_id()}/threads_publish",
-                   creation_id=create(text, imgs))["id"]
-        LAST.write_text(json.dumps({"folder": d.name, "threads_id": pid}), "utf-8")
-        print(f"已发布 {d.name}: {pid}")
+                   creation_id=create(parts[0], imgs))["id"]
+        first = pid
+        for extra in parts[1:]:            # 後續段落接在上一篇底下，串成一整串長文
+            cid = new(media_type="TEXT", text=extra, reply_to_id=pid)
+            pid = call("POST", f"{me_id()}/threads_publish", creation_id=cid)["id"]
+        LAST.write_text(json.dumps({"folder": d.name, "threads_id": first}), "utf-8")
+        print(f"已发布 {d.name}: {first}" + (f"（共 {len(parts)} 篇串成長文）" if len(parts) > 1 else ""))
         return
     print("posts 里没有可发的内容，这次不发")
 
