@@ -27,15 +27,15 @@ if [ ${#STRAY[@]} -gt 0 ]; then
     echo "   $f → $NEW"
     i=$((i + 1))
   done
-  TARGET="$NO.txt"
+  TARGET="草稿$NO.txt"
 else
   # 有圖沒文案的編號，優先補文案
   TARGET=""
   for f in *.jpg *.jpeg *.png *.mp4 *.mov; do
     KEY="${${f:r}%%-*}"
-    [ -e "$KEY.txt" ] || { TARGET="$KEY.txt"; break; }
+    [ -e "$KEY.txt" ] || [ -e "草稿$KEY.txt" ] || { TARGET="草稿$KEY.txt"; break; }
   done
-  [ -n "$TARGET" ] || TARGET="$NO.txt"
+  [ -n "$TARGET" ] || TARGET="草稿$NO.txt"
   echo "這一篇是：$TARGET"
 fi
 
@@ -47,7 +47,9 @@ echo "==============================="
 echo " 接下來："
 echo "  1. 在剛打開的視窗裡寫，簡體也沒關係"
 echo "  2. Command+S 存檔，關掉視窗"
-echo "  3. 雙擊「同步到雲端」（自動轉繁體、轉圖檔、檢查）"
+echo "  3. 這是草稿，不會被發出去"
+echo "     要發的時候，把檔名的「草稿」兩個字拿掉即可"
+echo "  4. 雙擊「同步到雲端」（自動轉繁體、轉圖檔、檢查）"
 echo "==============================="
 echo ""
 echo "（這個視窗可以直接關掉）"

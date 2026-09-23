@@ -40,6 +40,11 @@ def groups(folder=ROOT):
     return dict(sorted(out.items(), key=lambda kv: int(kv[0])))
 
 
+def is_draft(key, folder=ROOT):
+    """還有 草稿NNN.txt 存在，就代表這篇還沒放行"""
+    return (folder / f"草稿{key}.txt").exists()
+
+
 def read_group(files):
     """回傳 (文案, 媒體清單, 問題)"""
     txts = [f for f in files if f.suffix.lower() == ".txt"]
@@ -133,6 +138,9 @@ def split_text(text, limit=CHUNK):
 def publish():
     LAST.unlink(missing_ok=True)
     for key, files in groups().items():
+        if is_draft(key):
+            print(f"::warning::跳過 {key}：還是草稿（草稿{key}.txt 改名成 {key}.txt 才會發）")
+            continue
         text, media, problem = read_group(files)
         if problem:
             print(f"::warning::跳過 {key}：{problem}")

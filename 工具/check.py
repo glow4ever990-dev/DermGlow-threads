@@ -157,8 +157,14 @@ def check(files):
     return n, kind, bad, warn
 
 
+def drafts():
+    return sorted(f for f in ROOT.glob("草稿*.txt"))
+
+
 def main():
     rows, stray = items()
+    skip = {f.stem.replace("草稿", "") for f in drafts()}
+    rows = {k: v for k, v in rows.items() if k not in skip}
     if not rows:
         print("沒有待發的內容，這幾天不會發任何貼文。")
         return 0
@@ -173,6 +179,10 @@ def main():
         for w in warn:
             print(f"   ⚠️  {w}")
         nbad += bool(bad)
+    if drafts():
+        print("\n還沒放行的草稿（不會發出去）：")
+        for f in drafts():
+            print(f"   ・{f.name}　→　改名成 {f.name.replace('草稿', '')} 才會進隊列")
     if stray:
         print("\n這些檔案不會被發（檔名不是編號，或格式不支援）：")
         for f in stray:
