@@ -9,7 +9,7 @@
 import shutil, subprocess, sys
 from pathlib import Path
 
-POSTS = Path("posts")
+ROOT = Path(".")
 BACKUP = Path("原檔備份")
 MAXPX = 2048          # 長邊超過就縮到這個尺寸，省流量也避開 8MB 上限
 QUALITY = "80"
@@ -23,17 +23,17 @@ def to_traditional():
         print("   要裝的話執行：python3 -m pip install --user opencc-python-reimplemented")
         return
     cc = OpenCC("s2twp")   # 簡體 -> 繁體（台灣正體，含用詞轉換）
-    for txt in sorted(POSTS.rglob("*.txt")):
+    for txt in sorted(ROOT.glob("*.txt")):
         old = txt.read_text("utf-8")
         new = cc.convert(old)
         if new != old:
             txt.write_text(new, "utf-8")
             diff = sum(1 for a, b in zip(old, new) if a != b)
-            print(f"✅ {txt.relative_to(POSTS)}：轉成繁體（改了 {diff} 個字）")
+            print(f"✅ {txt.name}：轉成繁體（改了 {diff} 個字）")
 
 
 def heic_to_jpg():
-    heics = [p for p in sorted(POSTS.rglob("*"))
+    heics = [p for p in sorted(ROOT.glob("*"))
              if p.is_file() and p.suffix.lower() in (".heic", ".heif")]
     if not heics:
         return
@@ -55,8 +55,6 @@ def heic_to_jpg():
 
 
 def main():
-    if not POSTS.exists():
-        return 0
     heic_to_jpg()
     to_traditional()
     return 0

@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
       - run: pip install requests
       - name: 发布
-        run: python post.py
+        run: python 工具/post.py
         env:
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
       - name: 记录已发并提交（拉最新队列再改，失败自动重试）
@@ -29,8 +29,8 @@ jobs:
           for i in 1 2 3 4 5; do
             git fetch origin "$GITHUB_REF_NAME"
             git reset --hard "origin/$GITHUB_REF_NAME"
-            python post.py record
-            git add -A posts posted
+            python 工具/post.py record
+            git add -A
             git diff --cached --quiet && exit 0
             git commit -m "posted $(date -u '+%F %H:%M')"
             git push && exit 0

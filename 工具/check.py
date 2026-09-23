@@ -6,7 +6,7 @@
 import re, sys
 from pathlib import Path
 
-POSTS = Path("posts")
+ROOT = Path(".")
 IMG_OK = {".jpg", ".jpeg", ".png"}
 VID_OK = {".mp4", ".mov"}
 LIMIT = 500
@@ -92,24 +92,30 @@ MARKDOWN = [
 ]
 
 
+NAME = re.compile(r"^(\d+)(?:-(\d+))?$")
+OK_EXT = IMG_OK | VID_OK | {".txt"}
+
+
 def items():
-    if not POSTS.exists():
-        return []
-    return sorted((d for d in POSTS.iterdir()
-                   if not d.name.startswith(".") and (d.is_dir() or d.suffix.lower() == ".txt")),
-                  key=lambda d: d.name)
+    """根目錄裡照編號分組"""
+    out, stray = {}, []
+    for f in sorted(ROOT.iterdir()):
+        if not f.is_file() or f.name.startswith("."):
+            continue
+        m = NAME.match(f.stem)
+        if m and f.suffix.lower() in OK_EXT:
+            out.setdefault(m.group(1), []).append(f)
+        elif f.suffix.lower() in {".heic", ".heif", ".gif"} or (m and f.suffix.lower() not in OK_EXT):
+            stray.append(f)
+    return dict(sorted(out.items(), key=lambda kv: int(kv[0]))), stray
 
 
-def check(d):
-    bad, warn = [], []
-    if d.is_file():
-        text, imgs, others = d.read_text("utf-8").strip(), [], []
-    else:
-        files = [f for f in sorted(d.iterdir()) if f.is_file() and not f.name.startswith(".")]
-        txts = [f for f in files if f.suffix.lower() == ".txt"]
-        imgs = [f for f in files if f.suffix.lower() in IMG_OK | VID_OK]
-        others = [f for f in files if f not in txts and f not in imgs]
-        text = "\n\n".join(t.read_text("utf-8").strip() for t in txts)
+def check(files):
+    bad, warn, others = [], [], []
+    txts = [f for f in files if f.suffix.lower() == ".txt"]
+    imgs = sorted((f for f in files if f.suffix.lower() in IMG_OK | VID_OK),
+                  key=lambda f: (len(f.stem), f.stem))
+    text = "\n\n".join(t.read_text("utf-8").strip() for t in txts)
 
     n = len(text)
     if others:
@@ -138,7 +144,7 @@ def check(d):
     simp = sorted({c for c in text if c in SIMPLIFIED})
     if simp:
         warn.append(f"可能有簡體字：{' '.join(simp[:15])}{' …' if len(simp) > 15 else ''}")
-    if d.is_dir() and imgs and not text:
+    if imgs and not text:
         warn.append("有圖但沒有文案，確定是純圖貼文嗎？")
 
     vids = [f for f in imgs if f.suffix.lower() in VID_OK]
@@ -152,21 +158,25 @@ def check(d):
 
 
 def main():
-    rows = items()
+    rows, stray = items()
     if not rows:
-        print("posts 裡沒有東西，這幾天不會發任何貼文。")
+        print("沒有待發的內容，這幾天不會發任何貼文。")
         return 0
     print(f"共 {len(rows)} 篇待發\n" + "=" * 40)
     nbad = 0
-    for d in rows:
-        n, kind, bad, warn = check(d)
+    for key, files in rows.items():
+        n, kind, bad, warn = check(files)
         mark = "❌" if bad else ("⚠️ " if warn else "✅")
-        print(f"\n{mark} {d.name}　{kind}　{n} 字")
+        print(f"\n{mark} {key}　{kind}　{n} 字")
         for b in bad:
             print(f"   ❌ {b}")
         for w in warn:
             print(f"   ⚠️  {w}")
         nbad += bool(bad)
+    if stray:
+        print("\n這些檔案不會被發（檔名不是編號，或格式不支援）：")
+        for f in stray:
+            print(f"   ・{f.name}")
     print("\n" + "=" * 40)
     if nbad:
         print(f"有 {nbad} 篇發不出去（❌），改好再同步。前面標 ⚠️ 的只是提醒，不影響發布。")
