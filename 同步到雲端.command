@@ -13,7 +13,11 @@ COUNT=$(find posts -mindepth 1 -maxdepth 1 \( -type d -o -name "*.txt" \) 2>/dev
 echo "目前 posts 裡有 $COUNT 篇待發"
 echo ""
 
-# 先檢查內容，有 ❌ 就停下來不上傳
+# 自動整理：HEIC 轉 jpg、簡體轉繁體
+python3 tidy.py
+echo ""
+
+# 再檢查內容，有 ❌ 就停下來不上傳
 if ! python3 check.py; then
   echo ""
   echo "⛔️ 先把上面 ❌ 的問題改好，再雙擊一次同步。"
