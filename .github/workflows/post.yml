@@ -1,8 +1,8 @@
 name: Daily Threads Post
 on:
   schedule:
-    # 每天 10 次，每次发 1 条（时间是 UTC，= 布里斯班时间 8/10/12/13/15/16/18/19/20/21 点）
-    - cron: "0 22,0,2,3,5,6,8,9,10,11 * * *"
+    # 每天 4 次，每次发一串（时间是 UTC，= 布里斯班时间 9/13/18/21 点）
+    - cron: "0 23,3,8,11 * * *"
   workflow_dispatch:       # 允许手动触发测试
 permissions:
   contents: write
