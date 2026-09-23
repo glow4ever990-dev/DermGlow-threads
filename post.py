@@ -1,8 +1,8 @@
 """从 posts/ 里取排最前的一个文件夹发布到 Threads，发完挪进 posted/
 
-每篇帖子 = posts/ 下的一个文件夹，里面放：
-  一个 .txt 文件（文案，可省略）+ 若干张 .jpg/.jpeg/.png 图（可省略）
-文件夹按名字排序发，建议起名 001、002、003……
+每篇帖子 = posts/ 下的一个文件夹（文案 .txt + 若干张 .jpg/.jpeg/.png 图），
+或者直接一个 .txt 文件（纯文字帖，不用建文件夹）。
+按名字排序发，建议起名 001、002、003……
 1 张图 = 单图帖，2~20 张 = 轮播，没图 = 纯文字。
 
 两步走（由 workflow 依次调用）：
@@ -60,8 +60,15 @@ def new(**kw):
     return cid
 
 
-def read_folder(d):
-    """返回 (文案, 图片列表, 问题)；有问题的文件夹跳过不发"""
+def read_item(d):
+    """返回 (文案, 图片列表, 问题)；有问题的条目跳过不发"""
+    if d.is_file():  # 单个 txt = 纯文字帖
+        text = d.read_text("utf-8").strip()
+        if not text:
+            return text, [], "文件是空的"
+        if len(text) > 500:
+            return text, [], f"文案 {len(text)} 字，超过 Threads 上限 500 字"
+        return text, [], None
     files = sorted(f for f in d.iterdir() if f.is_file() and not f.name.startswith("."))
     txts = [f for f in files if f.suffix.lower() == ".txt"]
     imgs = [f for f in files if f.suffix.lower() in IMG_OK]
@@ -90,9 +97,12 @@ def create(text, imgs):
 
 def publish():
     LAST.unlink(missing_ok=True)
-    folders = sorted(d for d in POSTS.iterdir() if d.is_dir()) if POSTS.exists() else []
-    for d in folders:
-        text, imgs, problem = read_folder(d)
+    items = sorted(
+        (d for d in POSTS.iterdir()
+         if not d.name.startswith(".") and (d.is_dir() or d.suffix.lower() == ".txt")),
+        key=lambda d: d.name) if POSTS.exists() else []
+    for d in items:
+        text, imgs, problem = read_item(d)
         if problem:
             # GitHub 页面上会显示黄色警告，这个文件夹留着等你改
             print(f"::warning::跳过 {d.name}：{problem}")
