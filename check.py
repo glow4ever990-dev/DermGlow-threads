@@ -8,6 +8,7 @@ from pathlib import Path
 
 POSTS = Path("posts")
 IMG_OK = {".jpg", ".jpeg", ".png"}
+VID_OK = {".mp4", ".mov"}
 LIMIT = 500
 
 # 常見的簡體字（只收簡繁不同的），用來提醒忘了轉繁體
@@ -106,7 +107,7 @@ def check(d):
     else:
         files = [f for f in sorted(d.iterdir()) if f.is_file() and not f.name.startswith(".")]
         txts = [f for f in files if f.suffix.lower() == ".txt"]
-        imgs = [f for f in files if f.suffix.lower() in IMG_OK]
+        imgs = [f for f in files if f.suffix.lower() in IMG_OK | VID_OK]
         others = [f for f in files if f not in txts and f not in imgs]
         text = "\n\n".join(t.read_text("utf-8").strip() for t in txts)
 
@@ -122,8 +123,9 @@ def check(d):
         bad.append(f"{len(imgs)} 張圖，超過上限 20 張")
     for img in imgs:
         mb = img.stat().st_size / 1048576
-        if mb > 8:
-            bad.append(f"{img.name} 有 {mb:.1f}MB，超過單張 8MB 上限")
+        cap = 1024 if img.suffix.lower() in VID_OK else 8
+        if mb > cap:
+            bad.append(f"{img.name} 有 {mb:.1f}MB，超過上限 {cap}MB")
         elif img.stat().st_size == 0:
             bad.append(f"{img.name} 是空檔案")
 
@@ -139,7 +141,13 @@ def check(d):
     if d.is_dir() and imgs and not text:
         warn.append("有圖但沒有文案，確定是純圖貼文嗎？")
 
-    kind = "純文字" if not imgs else ("單圖" if len(imgs) == 1 else f"輪播 {len(imgs)} 張")
+    vids = [f for f in imgs if f.suffix.lower() in VID_OK]
+    if not imgs:
+        kind = "純文字"
+    elif len(imgs) == 1:
+        kind = "影片" if vids else "單圖"
+    else:
+        kind = f"輪播 {len(imgs)} 則" + (f"（含 {len(vids)} 段影片）" if vids else "")
     return n, kind, bad, warn
 
 

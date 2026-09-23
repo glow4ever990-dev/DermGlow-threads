@@ -22,6 +22,7 @@ POSTS, POSTED = Path("posts"), Path("posted")
 LOG = POSTED / "发布记录.csv"
 LAST = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "last_post.json"
 IMG_OK = {".jpg", ".jpeg", ".png"}  # Threads 只收这几种
+VID_OK = {".mp4", ".mov"}           # 影片；GIF 不收，要先转成 mp4
 LIMIT = 500                          # Threads 单篇上限
 CHUNK = 180                          # 长文切段的目标长度：一段一屏，读起来不累
 
@@ -45,8 +46,8 @@ def img_url(p):
     return f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{quote(p.as_posix())}"
 
 
-def wait_ready(cid):
-    for _ in range(20):
+def wait_ready(cid, tries=20):
+    for _ in range(tries):
         s = call("GET", cid, fields="status,error_message")
         if s.get("status") == "FINISHED":
             return
@@ -58,7 +59,7 @@ def wait_ready(cid):
 
 def new(**kw):
     cid = call("POST", f"{me_id()}/threads", **kw)["id"]
-    wait_ready(cid)
+    wait_ready(cid, 60 if kw.get("media_type") == "VIDEO" else 20)  # 影片处理慢，多等一会
     return cid
 
 
@@ -115,13 +116,19 @@ def split_text(text, limit=CHUNK):
     return ["\n\n".join(c) for c in chunks if c]
 
 
-def create(text, imgs):
-    urls = [img_url(i) for i in imgs]
-    if not urls:
+def media_args(f):
+    """图片用 image_url，影片用 video_url"""
+    if f.suffix.lower() in VID_OK:
+        return {"media_type": "VIDEO", "video_url": img_url(f)}
+    return {"media_type": "IMAGE", "image_url": img_url(f)}
+
+
+def create(text, media):
+    if not media:
         return new(media_type="TEXT", text=text)
-    if len(urls) == 1:
-        return new(media_type="IMAGE", image_url=urls[0], text=text)
-    kids = [new(media_type="IMAGE", image_url=u, is_carousel_item="true") for u in urls]
+    if len(media) == 1:
+        return new(text=text, **media_args(media[0]))
+    kids = [new(is_carousel_item="true", **media_args(f)) for f in media]
     return new(media_type="CAROUSEL", children=",".join(kids), text=text)
 
 
