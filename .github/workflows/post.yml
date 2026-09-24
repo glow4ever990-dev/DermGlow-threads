@@ -1,8 +1,6 @@
 name: Daily Threads Post
 on:
-  schedule:
-    # 每小时试一次，程序自己判断要不要发（GitHub 定时会跳过，这样能自动补上）
-    - cron: "5 * * * *"
+  # 定时由 cron-job.org 每 30 分钟触发（GitHub 自己的 schedule 会跳过，还会跟外部触发撞车）
   workflow_dispatch:       # 手动或外部定时服务触发
     inputs:
       force:
@@ -23,6 +21,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests
+      - name: 先拉最新纪录，避免跟另一次运行撞车
+        run: |
+          git fetch origin "$GITHUB_REF_NAME"
+          git reset --hard "origin/$GITHUB_REF_NAME"
       - name: 发布
         run: python 工具/post.py
         env:
