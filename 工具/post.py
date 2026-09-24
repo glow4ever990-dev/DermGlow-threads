@@ -10,7 +10,7 @@
   python 工具/post.py          發布編號最小的一篇
   python 工具/post.py record   在最新的倉庫上把那些檔案移進 posted/
 """
-import calendar, json, os, re, shutil, sys, time
+import calendar, json, os, random, re, shutil, sys, time
 from pathlib import Path
 from urllib.parse import quote
 import requests
@@ -109,7 +109,7 @@ def create(text, media):
 
 def should_post_now():
     """自癒式定時：GitHub 跳過幾次也沒關係，下個小時會自動補上
-    規則：布里斯本 8-22 點、距上次至少 3.5 小時、今天還沒滿 4 串"""
+    規則：布里斯本 8-22 點、距上次至少 4.5 小時、今天還沒滿 3 串"""
     now = time.time()
     bne = time.gmtime(now + 10 * 3600)          # 布里斯本固定 UTC+10
     if not 8 <= bne.tm_hour < 22:
@@ -124,11 +124,11 @@ def should_post_now():
         last = max(last, t)
         if time.strftime("%Y-%m-%d", time.gmtime(t + 10 * 3600)) == today:
             sent += 1
-    if sent >= 4:
+    if sent >= 3:
         return False, f"今天已經發了 {sent} 串"
     gap = (now - last) / 3600
-    if gap < 3.5:
-        return False, f"距上次發布才 {gap:.1f} 小時，還不到 3.5 小時"
+    if gap < 4.5:
+        return False, f"距上次發布才 {gap:.1f} 小時，還不到 4.5 小時"
     return True, ""
 
 
@@ -151,6 +151,7 @@ def publish():
         pid = first = call("POST", f"{me_id()}/threads_publish",
                            creation_id=create(parts[0], media))["id"]
         for extra in parts[1:]:
+            time.sleep(random.randint(40, 90))   # 每篇之間停一下，不要像機器連發
             cid = new(media_type="TEXT", text=extra, reply_to_id=pid)
             pid = call("POST", f"{me_id()}/threads_publish", creation_id=cid)["id"]
         LAST.write_text(json.dumps({"key": key, "files": [f.name for f in files],
