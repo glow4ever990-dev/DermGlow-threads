@@ -98,13 +98,28 @@ def media_args(f):
     return {"media_type": "IMAGE", "image_url": media_url(f)}
 
 
-def create(text, media):
+TAG = re.compile(r"#([^\s#]{1,50})")
+
+
+def pull_tag(text):
+    """把文案裡的 #標籤 抽出來單獨傳，寫在內文裡 Threads 不一定會認"""
+    m = TAG.search(text)
+    if not m:
+        return text, None
+    tag = m.group(1).strip("．。，,、!！?？~～")
+    if not tag or "." in tag or "&" in tag:
+        return text, None
+    return (text[:m.start()] + text[m.end():]).strip(), tag
+
+
+def create(text, media, tag=None):
+    extra = {"topic_tag": tag} if tag else {}
     if not media:
-        return new(media_type="TEXT", text=text)
+        return new(media_type="TEXT", text=text, **extra)
     if len(media) == 1:
-        return new(text=text, **media_args(media[0]))
+        return new(text=text, **media_args(media[0]), **extra)
     kids = [new(is_carousel_item="true", **media_args(f)) for f in media]
-    return new(media_type="CAROUSEL", children=",".join(kids), text=text)
+    return new(media_type="CAROUSEL", children=",".join(kids), text=text, **extra)
 
 
 def should_post_now():
@@ -147,9 +162,10 @@ def publish():
         if problem:
             print(f"::warning::跳過 {key}：{problem}")
             continue
+        text, tag = pull_tag(text)
         parts = split_text(text)
         pid = first = call("POST", f"{me_id()}/threads_publish",
-                           creation_id=create(parts[0], media))["id"]
+                           creation_id=create(parts[0], media, tag))["id"]
         for extra in parts[1:]:
             time.sleep(random.randint(40, 90))   # 每篇之間停一下，不要像機器連發
             cid = new(media_type="TEXT", text=extra, reply_to_id=pid)
