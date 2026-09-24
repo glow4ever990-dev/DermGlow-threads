@@ -3,7 +3,12 @@ on:
   schedule:
     # 每小时试一次，程序自己判断要不要发（GitHub 定时会跳过，这样能自动补上）
     - cron: "5 * * * *"
-  workflow_dispatch:       # 允许手动触发测试
+  workflow_dispatch:       # 手动或外部定时服务触发
+    inputs:
+      force:
+        description: "不管节奏规则，立刻发一串"
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:               # 两次运行不会同时进行，避免重复发同一条
@@ -22,7 +27,7 @@ jobs:
         run: python 工具/post.py
         env:
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
-          GATE: ${{ github.event_name == 'schedule' && '1' || '0' }}
+          GATE: ${{ inputs.force && '0' || '1' }}
       - name: 记录已发并提交（拉最新队列再改，失败自动重试）
         run: |
           git config user.name "github-actions"
