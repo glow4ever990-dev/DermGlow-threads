@@ -10,7 +10,7 @@
   python 工具/post.py          發布編號最小的一篇
   python 工具/post.py record   在最新的倉庫上把那些檔案移進 posted/
 """
-import json, os, re, shutil, sys, time
+import calendar, json, os, re, shutil, sys, time
 from pathlib import Path
 from urllib.parse import quote
 import requests
@@ -107,7 +107,37 @@ def create(text, media):
     return new(media_type="CAROUSEL", children=",".join(kids), text=text)
 
 
+def should_post_now():
+    """自癒式定時：GitHub 跳過幾次也沒關係，下個小時會自動補上
+    規則：布里斯本 8-22 點、距上次至少 3.5 小時、今天還沒滿 4 串"""
+    now = time.time()
+    bne = time.gmtime(now + 10 * 3600)          # 布里斯本固定 UTC+10
+    if not 8 <= bne.tm_hour < 22:
+        return False, f"布里斯本現在 {bne.tm_hour} 點，不在發布時段"
+    if not LOG.exists():
+        return True, ""
+    rows = [r.split(",") for r in LOG.read_text("utf-8").splitlines()[1:] if r.strip()]
+    today = time.strftime("%Y-%m-%d", bne)
+    sent, last = 0, 0
+    for r in rows:
+        t = calendar.timegm(time.strptime(r[0], "%Y-%m-%d %H:%M"))
+        last = max(last, t)
+        if time.strftime("%Y-%m-%d", time.gmtime(t + 10 * 3600)) == today:
+            sent += 1
+    if sent >= 4:
+        return False, f"今天已經發了 {sent} 串"
+    gap = (now - last) / 3600
+    if gap < 3.5:
+        return False, f"距上次發布才 {gap:.1f} 小時，還不到 3.5 小時"
+    return True, ""
+
+
 def publish():
+    if os.environ.get("GATE") == "1":
+        ok, why = should_post_now()
+        if not ok:
+            print(f"這次不發：{why}")
+            return
     LAST.unlink(missing_ok=True)
     for key, files in groups().items():
         if is_draft(key):
