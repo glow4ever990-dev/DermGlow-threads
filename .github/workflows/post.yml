@@ -27,6 +27,7 @@ jobs:
         run: python 工具/post.py
         env:
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
           GATE: ${{ inputs.force && '0' || '1' }}
       - name: 记录已发并提交（拉最新队列再改，失败自动重试）
         run: |

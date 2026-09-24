@@ -1,8 +1,8 @@
-"""同步前自動整理 posts 裡的素材（會改檔案）
+"""同步前自動整理素材（會改檔案）
 
 做兩件事：
 1. 文案裡的簡體字轉成繁體，並換成台灣慣用詞（軟件→軟體、視頻→影片、信息→資訊…）
-2. iPhone 的 HEIC 照片轉成 jpg，原檔移到 原檔備份/ 留著
+2. HEIC 和 PNG 轉成 jpg（Instagram 只收 JPEG），原檔移到 原檔備份/ 留著
 
 用法：python3 tidy.py
 """
@@ -39,7 +39,7 @@ def to_traditional():
 
 def heic_to_jpg():
     heics = [p for p in sorted(ROOT.glob("*"))
-             if p.is_file() and p.suffix.lower() in (".heic", ".heif")]
+             if p.is_file() and p.suffix.lower() in (".heic", ".heif", ".png")]
     if not heics:
         return
     BACKUP.mkdir(exist_ok=True)
