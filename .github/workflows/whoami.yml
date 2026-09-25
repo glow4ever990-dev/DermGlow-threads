@@ -27,6 +27,14 @@ jobs:
               r = requests.get("https://graph.instagram.com/v21.0/me",
                                params={"fields": "user_id,username,account_type", "access_token": i}, timeout=30)
               print("Instagram 帳號：", r.json() if r.ok else r.text[:200])
+              # 試建一個容器但不發布，用來驗證發布權限有沒有生效
+              img = ("https://raw.githubusercontent.com/glow4ever990-dev/"
+                     "DermGlow-threads/main/011.jpg")
+              uid = r.json().get("user_id")
+              t2 = requests.post(f"https://graph.instagram.com/v21.0/{uid}/media",
+                                 params={"image_url": img, "caption": "權限測試（不會發布）",
+                                         "access_token": i}, timeout=60)
+              print("發布權限測試：", "OK 容器建好了" if t2.ok else t2.text[:300])
           else:
               print("Instagram：還沒設 IG_TOKEN")
           PY
