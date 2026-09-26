@@ -171,7 +171,9 @@ def publish():
             time.sleep(random.randint(40, 90))   # 每篇之間停一下，不要像機器連發
             cid = new(media_type="TEXT", text=extra, reply_to_id=pid)
             pid = call("POST", f"{me_id()}/threads_publish", creation_id=cid)["id"]
-        ig.try_publish(text, media, media_url)     # 有圖的順便發 IG，失敗不影響 Threads
+        # IG 的文案要把標籤帶回去（IG 靠 # 找內容，Threads 是用參數傳）
+        ig_text = f"{text}\n\n#{tag}" if tag else text
+        ig.try_publish(ig_text, media, media_url)  # 有圖的順便發 IG，失敗不影響 Threads
         LAST.write_text(json.dumps({"key": key, "files": [f.name for f in files],
                                     "threads_id": first}), "utf-8")
         print(f"已發布 {key}: {first}" + (f"（切成 {len(parts)} 篇串成長文）" if len(parts) > 1 else ""))
