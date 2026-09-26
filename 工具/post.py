@@ -125,11 +125,9 @@ def create(text, media, tag=None):
 
 def should_post_now():
     """自癒式定時：GitHub 跳過幾次也沒關係，下個小時會自動補上
-    規則：布里斯本 8-22 點、距上次至少 4.5 小時、今天還沒滿 3 串"""
+    規則：全天不間斷，距上次至少 4 小時、一天最多 6 串"""
     now = time.time()
     bne = time.gmtime(now + 10 * 3600)          # 布里斯本固定 UTC+10
-    if not 8 <= bne.tm_hour < 22:
-        return False, f"布里斯本現在 {bne.tm_hour} 點，不在發布時段"
     if not LOG.exists():
         return True, ""
     rows = [r.split(",") for r in LOG.read_text("utf-8").splitlines()[1:] if r.strip()]
@@ -140,11 +138,11 @@ def should_post_now():
         last = max(last, t)
         if time.strftime("%Y-%m-%d", time.gmtime(t + 10 * 3600)) == today:
             sent += 1
-    if sent >= 3:
+    if sent >= 6:
         return False, f"今天已經發了 {sent} 串"
     gap = (now - last) / 3600
-    if gap < 4.5:
-        return False, f"距上次發布才 {gap:.1f} 小時，還不到 4.5 小時"
+    if gap < 4:
+        return False, f"距上次發布才 {gap:.1f} 小時，還不到 4 小時"
     return True, ""
 
 
