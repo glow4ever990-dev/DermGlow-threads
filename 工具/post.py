@@ -171,6 +171,9 @@ def publish():
             pid = call("POST", f"{me_id()}/threads_publish", creation_id=cid)["id"]
         # IG 的文案要把標籤帶回去（IG 靠 # 找內容，Threads 是用參數傳）
         ig_text = f"{text}\n\n#{tag}" if tag else text
+        extra = Path("工具/ig標籤.txt")            # IG 靠標籤被搜尋到，多帶幾個
+        if extra.exists():
+            ig_text += "\n" + extra.read_text("utf-8").strip()
         ig.try_publish(ig_text, media, media_url)  # 有圖的順便發 IG，失敗不影響 Threads
         LAST.write_text(json.dumps({"key": key, "files": [f.name for f in files],
                                     "threads_id": first}), "utf-8")
