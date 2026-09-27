@@ -15,6 +15,7 @@ echo ""
 
 # 自動整理：HEIC 轉 jpg、簡體轉繁體
 python3 工具/tidy.py
+python3 工具/排版.py
 echo ""
 
 # 再檢查內容，有 ❌ 就停下來不上傳
