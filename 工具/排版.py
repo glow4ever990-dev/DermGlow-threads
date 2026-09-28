@@ -12,7 +12,7 @@
 import re, sys
 from pathlib import Path
 
-LONG = 45          # 一段超過這個長度才拆
+LONG = 20          # 一段超過這個長度就拆成一句一行
 STOPS = "。！？～!?"
 PAIRS = {"「": "」", "『": "』", "（": "）", "(": ")"}
 
@@ -42,19 +42,25 @@ def split_sentences(para):
     return [s.strip() for s in merged if s.strip()]
 
 
+def drop_periods(line):
+    """行尾的句號拿掉——台灣人在社群上幾乎不打句號，靠換行斷句"""
+    line = line.rstrip()
+    return line[:-1] if line.endswith("。") else line
+
+
 def reflow(text):
     blocks = []
     for para in text.split("\n\n"):
         para = para.strip()
         if not para:
             continue
-        if "\n" in para:                      # 已經是逐行的（清單之類）就別動
-            blocks.append(para)
+        if "\n" in para:                      # 已經是逐行的（清單之類）
+            blocks.append("\n".join(drop_periods(l) for l in para.split("\n")))
             continue
         if len(para) <= LONG:
-            blocks.append(para)
+            blocks.append(drop_periods(para))
             continue
-        blocks.append("\n".join(split_sentences(para)))
+        blocks.append("\n".join(drop_periods(l) for l in split_sentences(para)))
     return "\n\n".join(blocks) + "\n"
 
 
