@@ -21,13 +21,14 @@ def split_sentences(para):
     """在標點後換行，但不動成對符號裡面的內容"""
     out, buf, depth = [], "", 0
     closers = set(PAIRS.values())
-    for ch in para:
+    for i, ch in enumerate(para):
         buf += ch
+        nxt = para[i + 1] if i + 1 < len(para) else ""
         if ch in PAIRS:
             depth += 1
         elif ch in closers:
             depth = max(0, depth - 1)
-        elif ch in STOPS and depth == 0:
+        elif ch in STOPS and depth == 0 and nxt not in STOPS and nxt not in closers:
             out.append(buf)
             buf = ""
     if buf.strip():
