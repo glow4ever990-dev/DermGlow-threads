@@ -144,6 +144,12 @@ def check(files):
     tags = re.findall(r"#[^\s#]+", text)
     if len(tags) > 1:
         warn.append(f"有 {len(tags)} 個話題標籤（{' '.join(tags)}），Threads 只認第一個")
+    years = re.findall(r"(?:19|20)\d{2}", text)
+    stale = [y for y in years if y not in ("2024", "2025")]
+    if stale:
+        warn.append(f"出現年份 {'、'.join(sorted(set(stale)))}——資料是 2024/2025 寫的，確認一下還準不準")
+    elif years:
+        warn.append(f"文案裡提到 {'、'.join(sorted(set(years)))}，現在是 2026 年，確認一下要不要改")
     simp = sorted({c for c in text if c in SIMPLIFIED})
     if simp:
         warn.append(f"可能有簡體字：{' '.join(simp[:15])}{' …' if len(simp) > 15 else ''}")
