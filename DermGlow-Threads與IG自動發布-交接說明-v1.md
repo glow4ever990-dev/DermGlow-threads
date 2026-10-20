@@ -1,6 +1,8 @@
-# DermGlow Threads／Instagram 自動發布 — 交接說明
+# DermGlow｜Threads 與 Instagram 自動發布系統 — 交接說明 v1
 
 最後更新：2026-10-20
+專案位置：本機 ~/threads-autopost ＋ GitHub 倉庫 glow4ever990-dev/DermGlow-threads
+用途：黃金海岸美容工作室 DermGlow 的社群自動發文
 
 ## 一句話
 
