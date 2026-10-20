@@ -6,7 +6,7 @@
 
 用法：python3 tidy.py
 """
-import shutil, subprocess, sys
+import re, shutil, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(".")
@@ -59,9 +59,39 @@ def heic_to_jpg():
         print(f"✅ {src.name} → {dst.name}（{mb:.1f}MB，原檔移到 原檔備份/）")
 
 
+def ig_safe_copies():
+    """IG 只收 4:5 到 1.91:1 的圖，超出範圍的補白邊存一份到 IG用/
+    （Threads 不挑比例，所以原圖不動）"""
+    out = Path("IG用")
+    for img in sorted(ROOT.glob("*.jpg")) + sorted(ROOT.glob("*.jpeg")):
+        if not re.match(r"^\d+(-\d+)?$", img.stem):
+            continue
+        r = subprocess.run(["sips", "-g", "pixelWidth", "-g", "pixelHeight", str(img)],
+                           capture_output=True, text=True)
+        nums = [int(x.split(":")[1]) for x in r.stdout.splitlines() if ":" in x and x.split(":")[1].strip().isdigit()]
+        if len(nums) < 2:
+            continue
+        w, h = nums[0], nums[1]
+        ratio = w / h
+        if 0.8 <= ratio <= 1.91:
+            continue                       # 比例本來就合格
+        dst = out / img.name
+        if dst.exists() and dst.stat().st_mtime >= img.stat().st_mtime:
+            continue
+        out.mkdir(exist_ok=True)
+        if ratio < 0.8:                    # 太高 -> 左右補白到 4:5
+            W, H = max(w, int(h * 0.8)), h
+        else:                              # 太寬 -> 上下補白到 1.91:1
+            W, H = w, max(h, int(w / 1.91))
+        subprocess.run(["sips", "-p", str(H), str(W), "--padColor", "FFFFFF",
+                        str(img), "--out", str(dst)], capture_output=True)
+        print(f"✅ {img.name}：比例 {ratio:.2f} 不合 IG，補白邊存到 IG用/")
+
+
 def main():
     heic_to_jpg()
     to_traditional()
+    ig_safe_copies()
     return 0
 
 

@@ -57,6 +57,13 @@ def container(url, caption=None, is_video=False, child=False):
     return cid
 
 
+def ig_file(f):
+    """有補過白邊的版本就用那份（IG 挑比例，Threads 不挑）"""
+    from pathlib import Path
+    alt = Path("IG用") / f.name
+    return alt if alt.exists() else f
+
+
 def publish(text, media, url_of):
     """media 是本機檔案清單，url_of(f) 回傳它的公開網址。
     回傳 IG 貼文 id，或 None（這篇不適合發 IG）"""
@@ -75,12 +82,12 @@ def publish(text, media, url_of):
     if len(vids) == 1 and not jpgs:
         cid = container(url_of(vids[0]), caption, is_video=True)
     elif len(jpgs) == 1 and not vids:
-        cid = container(url_of(jpgs[0]), caption)
+        cid = container(url_of(ig_file(jpgs[0])), caption)
     else:
         items = (jpgs + vids)[:CAROUSEL_MAX]
         if len(items) < len(jpgs) + len(vids):
             print(f"::warning::IG：輪播最多 {CAROUSEL_MAX} 個，只送了前 {CAROUSEL_MAX} 個")
-        kids = [container(url_of(f), is_video=f.suffix.lower() in VID, child=True) for f in items]
+        kids = [container(url_of(ig_file(f)), is_video=f.suffix.lower() in VID, child=True) for f in items]
         cid = call("POST", f"{me()}/media", media_type="CAROUSEL",
                    children=",".join(kids), caption=caption)["id"]
         wait_ready(cid)
