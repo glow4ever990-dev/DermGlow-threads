@@ -42,14 +42,6 @@ fi
 [ -e "$TARGET" ] || : > "$TARGET"
 # -F 讓 TextEdit 不要還原上一次的視窗，新檔案才會在最前面
 open -F -a TextEdit "$TARGET"
-tell application "TextEdit"
-  activate
-  open POSIX file "$FULL"
-  if (count of documents) > 0 then
-    set front document to document 1 of (every document whose path is "$FULL")
-  end if
-end tell
-APPLESCRIPT
 
 echo ""
 echo "==============================="
