@@ -40,8 +40,9 @@ else
 fi
 
 [ -e "$TARGET" ] || : > "$TARGET"
-# -F 讓 TextEdit 不要還原上一次的視窗，新檔案才會在最前面
-open -F -a TextEdit "$TARGET"
+# -n 開一個全新的 TextEdit 實例，裡面只有這個檔案
+# （不加 -n 的話，上一篇的視窗會留在最上層，看起來像「又開到上一篇」）
+open -n -F -a TextEdit "$TARGET"
 
 echo ""
 echo "==============================="
