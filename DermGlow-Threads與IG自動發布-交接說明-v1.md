@@ -1,8 +1,12 @@
 # DermGlow｜Threads 與 Instagram 自動發布系統 — 交接說明 v1
 
-最後更新：2026-10-20
+最後更新：2026-11-08（v1.1）
 專案位置：本機 ~/threads-autopost ＋ GitHub 倉庫 glow4ever990-dev/DermGlow-threads
 用途：黃金海岸美容工作室 DermGlow 的社群自動發文
+
+**這個專案跟 Products-Pro／ReadSkin 引擎是兩回事**，不共用規則、不共用記憶、不共用帳號。
+接手時工作目錄開在 `~/threads-autopost`，不要掛在 Products-Pro 底下。
+專屬記憶在 `~/.claude/projects/-Users-nndd-threads-autopost/memory/`。
 
 ## 一句話
 
@@ -77,6 +81,18 @@ GitHub Secrets（在倉庫 Settings → Secrets → Actions）：
 
 ---
 
+## 最常出事的一件：隊列會空掉
+
+到 2026-11-08 為止停更過四次，每次原因都一樣——使用者寫了草稿，但沒放行、沒同步，雲端沒東西可發。
+
+**接手後每次對話先跑這一行**：
+
+```
+cd ~/threads-autopost && ls 草稿*.txt; ls [0-9]*.txt | wc -l; tail -2 posted/發布記錄.csv
+```
+
+草稿有東西就潤色放行；待發少於 5 篇就提醒使用者補素材；發布記錄最後一筆超過一天沒更新就是斷更了。
+
 ## 常見狀況
 
 **沒在發文** — 九成是隊列空了：草稿沒放行，或放行了沒同步。檢查 `ls [0-9]*.txt`，再雙擊同步。
@@ -88,6 +104,16 @@ GitHub Secrets（在倉庫 Settings → Secrets → Actions）：
 **IG 授權彈窗連不上** — Safari 會擋第三方 cookie，用 Chrome 做授權那一步。
 
 **查現在接的是哪個帳號** — GitHub Actions → 「查帳號」→ Run workflow。
+
+**推送被拒、或 403 Must have admin rights** — gh 的目前帳號被切到使用者另一個專案在用的那個了。修法：
+
+```
+gh auth switch -u glow4ever990-dev && gh auth setup-git && git push
+```
+
+倉庫遠端網址已經鎖定正確帳號，但 gh 的「目前帳號」是全域的，在別的專案切走了這裡還是會中招。
+
+**「新增一篇」開出來是上一篇** — 已修。用 `open -n -F -a TextEdit` 開一個全新的 TextEdit 實例，上一篇的視窗就不會蓋在前面。
 
 ## 目錄
 
