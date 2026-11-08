@@ -5,7 +5,7 @@ setopt NULL_GLOB
 
 # 下一個可用的編號（根目錄和 posted 都看過，不會重號）
 next_no() {
-  local last=$( { ls . posted 2>/dev/null; } | sed -n 's/^0*\([0-9]\{1,\}\).*/\1/p' | sort -n | tail -1 )
+  local last=$( { ls . posted 2>/dev/null; } | sed -n 's/^\(草稿\)\{0,1\}0*\([0-9]\{1,\}\).*/\2/p' | sort -n | tail -1 )
   printf "%03d" $(( 10#${last:-0} + 1 ))
 }
 

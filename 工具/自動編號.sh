@@ -16,7 +16,7 @@ for f in *.jpg *.jpeg *.png *.heic *.mp4 *.mov *.JPG *.JPEG *.PNG *.HEIC *.MP4 *
 done
 [ ${#STRAY[@]} -eq 0 ] && exit 0
 
-LAST=$( { ls . posted 2>/dev/null; } | sed -n 's/^0*\([0-9]\{1,\}\).*/\1/p' | sort -n | tail -1 )
+LAST=$( { ls . posted 2>/dev/null; } | sed -n 's/^\(草稿\)\{0,1\}0*\([0-9]\{1,\}\).*/\2/p' | sort -n | tail -1 )
 NO=$(printf "%03d" $(( 10#${LAST:-0} + 1 )))
 
 i=1
