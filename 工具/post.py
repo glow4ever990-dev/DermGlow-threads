@@ -117,10 +117,12 @@ def create(text, media, tag=None):
     extra = {"topic_tag": tag} if tag else {}
     if not media:
         return new(media_type="TEXT", text=text, **extra)
+    if text:                       # 純圖貼文：沒文案就不送 text，免得空字串被拒
+        extra["text"] = text
     if len(media) == 1:
-        return new(text=text, **media_args(media[0]), **extra)
+        return new(**media_args(media[0]), **extra)
     kids = [new(is_carousel_item="true", **media_args(f)) for f in media]
-    return new(media_type="CAROUSEL", children=",".join(kids), text=text, **extra)
+    return new(media_type="CAROUSEL", children=",".join(kids), **extra)
 
 
 def should_post_now():
